@@ -1,2 +1,2 @@
-# CrawLogs
-Skipt that gives informations extracted from Minecraft server log files
+# Logs Browser
+Script that gives informations extracted from Minecraft server log files
