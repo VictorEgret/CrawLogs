@@ -46,8 +46,11 @@ def extract_data(path: str) -> list[Player]:
 
 if __name__ == "__main__":
 	print("Logs data crawler by Victor Egret for Minecraft 1.19.3")
-	#path = input("Enter the logs folder path: ")
-	path = "example_logs" # Debug purpose, will be removed
+	# TODO handle windows paths
+	if len(sys.argv) == 1:
+		path = input("Enter the logs folder path: ")
+	else:
+		path = sys.argv[1]
 	if not path[-1] == '/':
 		path += '/'
 	if not os.path.exists(path):
@@ -58,5 +61,6 @@ if __name__ == "__main__":
 		exit(1)
 	
 	data = extract_data(path)
+	print(sys.argv)
 	for player in data:
 		print(player)
