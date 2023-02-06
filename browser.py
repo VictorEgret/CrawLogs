@@ -1,6 +1,7 @@
 import os
 import sys
 import gzip
+from uuid import *
 
 ZIP_TYPES = {".gz"}
 
@@ -23,16 +24,35 @@ def get_type(file: str) -> str:
 			return _type
 	return None
 
-def extract_log_data(data: str, extracted: list[Player]) -> None:
-	print(data)
+def extract_log_data(data: str, extracted: dict[UUID]) -> None:
+	data = data.split("\n")
+	it = iter(data)
+	try:
+		while True:
+			line = next(it)
+			if "User Authenticator" in line and "UUID" in line:
+				line = line.split()
+				try:
+					id = UUID(line[-1])
+					name = line[-3]
+					line = next(it)
+					line = next(it)
+					line = line.split()
+					ip = line[3][:-1].split("/")[1]
+					print(id, name, ip)
+					# TODO Finish adding players in extracted
+				except:
+					pass
 
+	except:
+		pass
 
-def extract_data(path: str) -> list[Player]:
-	data = []
+def extract_data(path: str) -> dict[UUID]:
+	data = {}
 	for file in os.listdir(path):
 		zip_type = get_type(file)
 		if not zip_type:
-			pass
+			continue
 		try:
 			with gzip.open(path + file, 'rt', encoding="utf-8") as f_in:
 				extract_log_data(f_in.read(), data)
@@ -44,7 +64,7 @@ def extract_data(path: str) -> list[Player]:
 	except: pass
 	return data
 
-if __name__ == "__main__":
+def main():
 	print("Logs data crawler by Victor Egret for Minecraft 1.19.3")
 	# TODO handle windows paths
 	if len(sys.argv) == 1:
@@ -54,13 +74,17 @@ if __name__ == "__main__":
 	if not path[-1] == '/':
 		path += '/'
 	if not os.path.exists(path):
-		print(f"Cannot find {path}", file=sys.stderr)
-		exit(1)
+		raise FileNotFoundError(f"Cannot find {path}")
 	if not os.path.isdir(path):
-		print(f"{path} is not a directory", file=sys.stderr)
-		exit(1)
+		raise NotADirectoryError(f"{path} is not a directory")
 	
 	data = extract_data(path)
-	print(sys.argv)
-	for player in data:
+	for player in data.items():
 		print(player)
+
+if __name__ == "__main__":
+	try:
+		main()
+	except BaseException as e:
+		print(e, file=sys.stderr)
+		exit(1)
