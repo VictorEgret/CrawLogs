@@ -29,10 +29,10 @@ class Player:
 		self.logins = []
 
 	def __repr__(self) -> str:
-		repr = f"{self.uuid} {self.name} {self.logins[0]}\n"
-		tmp = len(str(self.uuid)) + len(self.name) + 2
+		repr = f"{self.uuid} {self.name + ' ' * (16 - len(self.name))} {self.logins[0]}\n"
+		tmp = len(str(self.uuid)) + len(self.name) + 16 - len(self.name) + 2
 		for login in self.logins[1:]:
-			repr += tmp * " " + str(login)
+			repr += tmp * " " + str(login) + '\n'
 		return repr
 
 def get_type(file: str) -> str:
@@ -50,13 +50,15 @@ def extract_log_data(filename: str, data: str, extracted: dict[UUID, Player]) ->
 			if "User Authenticator" in line and "UUID" in line:
 				line = line.split()
 				try:
-					time = line[0][1:-1]
+					time = line[0][1:9]
 					id = UUID(line[-1])
 					name = line[-3]
 					line = next(it)
 					line = next(it)
 					line = line.split()
 					ip = line[3][:-1].split("/")[1]
+					if not ip[0].isdigit():
+						ip = "Error" # TODO Fix
 					if not id in extracted:
 						extracted[id] = Player(id, name)
 					extracted[id].logins.append(Login(time, filename, ip))
@@ -66,21 +68,37 @@ def extract_log_data(filename: str, data: str, extracted: dict[UUID, Player]) ->
 	except:
 		pass
 
+def progress_bar(current, total, size):
+	if not current == 0:
+		print("\033[2K", end='')
+	done = int(current / total * size)
+	if current == total:
+		print(f"\r|{'██' * size}| (100.00 %)")
+	else:
+		print(f"\r|{'██' * done + '  ' * (size - done)}| ({current * 100 / total:.2f} %)", end='')
+
 def extract_data(path: str) -> dict[UUID, Player]:
 	data = {}
-	for file in os.listdir(path):
+	files = os.listdir(path)
+	if os.path.exists(path + "latest.log"):
+		files.append("latest.log")
+	i = 1
+	total = len(files)
+	for file in files:
+		progress_bar(i, total, 30)
 		zip_type = get_type(file)
-		if not zip_type:
-			continue
-		try:
-			with gzip.open(path + file, 'rt', encoding="utf-8") as f_in:
-				extract_log_data(path + file, f_in.read(), data)
-		except:
-			print(f"Error while extracting {path + file}", file=sys.stderr)
-	try:
-		with open(path + "latest.log", 'rt', encoding="utf-8") as f_in:
-			extract_log_data(path + "latest.log", f_in.read(), data)
-	except: pass
+		if zip_type == None:
+			try:
+				with open(path + file, 'rt', encoding="utf-8") as f_in:
+					extract_log_data(path + file, f_in.read(), data)
+			except OSError: pass
+		else:
+			try:
+				with gzip.open(path + file, 'rt', encoding="utf-8") as f_in:
+					extract_log_data(path + file, f_in.read(), data)
+			except:
+				print(f"Error while extracting {path + file}", file=sys.stderr)
+		i += 1
 	return data
 
 def main() -> None:
