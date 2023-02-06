@@ -10,6 +10,7 @@ cd Logs-Browser
 python browser.py [logs folder path]
 ```
 ## Output
+Format: \<UUID> \<Username> \<Time> \<Address:Port> \<File path>
 ```
 ➜  Logs-Browser git:(main) ✗ python3.10 browser.py example_logs
 Logs data browser by Victor Egret for Minecraft 1.19.3
