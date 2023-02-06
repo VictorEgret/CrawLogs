@@ -44,38 +44,37 @@ def get_type(file: str) -> str:
 def extract_log_data(filename: str, data: str, extracted: dict[UUID, Player]) -> None:
 	data = data.split("\n")
 	it = iter(data)
+	line = ""
 	try:
 		while True:
 			line = next(it)
 			if "User Authenticator" in line and "UUID" in line:
 				line = line.split()
-				try:
-					time = line[0][1:9]
-					id = UUID(line[-1])
-					name = line[-3]
-					line = next(it)
-					line = next(it)
-					line = line.split()
-					ip = line[3][:-1].split("/")[1]
-					if not ip[0].isdigit():
-						ip = "Error" # TODO Fix
-					if not id in extracted:
-						extracted[id] = Player(id, name)
-					extracted[id].logins.append(Login(time, filename, ip))
-				except StopIteration:
-					pass
-
-	except:
+				time = line[0][1:9]
+				id = UUID(line[-1])
+				name = line[-3]
+				line = next(it)
+				line = next(it)
+				line = line.split()
+				ip = line[3][:-1].split("/")[1]
+				if not ip[0].isdigit():
+					ip = "Error" # TODO Fix
+				if not id in extracted:
+					extracted[id] = Player(id, name)
+				extracted[id].logins.append(Login(time, filename, ip))
+	except (StopIteration, IndexError):
 		pass
+	except ValueError:
+		print(f"Invalid UUID format: \"{line[-1]}\"", file=sys.stderr)
 
 def progress_bar(current, total, size):
 	if not current == 0:
 		print("\033[2K", end='')
 	done = int(current / total * size)
 	if current == total:
-		print(f"\r|{'██' * size}| (100.00 %)")
+		print(f"\r|{'█' * size}| (100.00 %) ")
 	else:
-		print(f"\r|{'██' * done + '  ' * (size - done)}| ({current * 100 / total:.2f} %)", end='')
+		print(f"\r|{'█' * done + ' ' * (size - done)}| ({current * 100 / total:.2f} %) ", end='')
 
 def extract_data(path: str) -> dict[UUID, Player]:
 	data = {}
@@ -91,12 +90,13 @@ def extract_data(path: str) -> dict[UUID, Player]:
 			try:
 				with open(path + file, 'rt', encoding="utf-8") as f_in:
 					extract_log_data(path + file, f_in.read(), data)
-			except OSError: pass
+			except OSError:
+				print(f"Error while extracting {path + file}", file=sys.stderr)
 		else:
 			try:
 				with gzip.open(path + file, 'rt', encoding="utf-8") as f_in:
 					extract_log_data(path + file, f_in.read(), data)
-			except:
+			except (OSError):
 				print(f"Error while extracting {path + file}", file=sys.stderr)
 		i += 1
 	return data
