@@ -13,7 +13,6 @@ python browser.py [logs folder path]
 ```
 ➜  Logs-Browser git:(main) ✗ python3.10 browser.py example_logs
 Logs data browser by Victor Egret for Minecraft 1.19.3
-fb4f1dd4-e9c3-47ed-8a1b-17de9e80ae1e
 abcdef01-abcd-abcd-abcd-abcdef012345 User 19:15:35 127.0.0.1:55953 example_logs/2022-10-11-7.log.gz
                                           19:25:57 127.0.0.1:57327 example_logs/latest.log
 ```
