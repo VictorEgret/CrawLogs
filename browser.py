@@ -1,7 +1,9 @@
 import os
+import re
 import sys
 import gzip
 from uuid import *
+from typing import Optional
 
 ZIP_TYPES = {".gz"}
 
@@ -16,16 +18,18 @@ class Login:
 		self.ip = ip
 
 	def __repr__(self) -> str:
-		return f"{self.time} {self.ip} {self.file}"
+		repr = f"{self.time} "
+		repr += f"{self.ip}{' ' * (21 - len(self.ip))} {self.file}"
+		return repr
 
 class Player:
 	uuid: UUID
 	name: str
 	logins: list[Login]
 
-	def __init__(self, uuid: UUID, name: str) -> None:
-		self.uuid = uuid
+	def __init__(self, name: str = None, id: UUID = None) -> None:
 		self.name = name
+		self.uuid = id
 		self.logins = []
 
 	def __repr__(self) -> str:
@@ -41,27 +45,43 @@ def get_type(file: str) -> str:
 			return _type
 	return None
 
-def extract_log_data(filename: str, data: str, extracted: dict[UUID, Player]) -> None:
+def get_player_by_name(name: str, data: list[Player]) -> Optional[Player]:
+	for player in data:
+		if player.name == name:
+			return player
+	return None
+
+def extract_log_data(filename: str, data: str, extracted: list[Player]) -> None:
 	data = data.split("\n")
-	it = iter(data)
 	line = ""
 	try:
-		while True:
-			line = next(it)
-			if "User Authenticator" in line and "UUID" in line:
+		for i in range(len(data)):
+			line = data[i]
+			time = line[1:9]
+			has_ip = re.search(r"\w+\[\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,5})", line)
+			if has_ip:
+				line = has_ip.group(0)
+				name = line[:line.index('[')]
+				ip = line[line.index('/') + 1:]
+				player = get_player_by_name(name, extracted)
+				if not player:
+					player = Player(name=name)
+					extracted.append(player)
+				player.logins.append(Login(time, filename, ip))
+				continue
+
+			# TODO good uuid pattern
+			has_uuid = re.match(r"(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})\.", line)
+			print(line)
+			if "User Authenticator" in line and has_uuid:
 				line = line.split()
-				time = line[0][1:9]
-				id = UUID(line[-1])
+				id = line[-1]
 				name = line[-3]
-				line = next(it)
-				line = next(it)
-				line = line.split()
-				ip = line[3][:-1].split("/")[1]
-				if not ip[0].isdigit():
-					ip = "Error" # TODO Fix
-				if not id in extracted:
-					extracted[id] = Player(id, name)
-				extracted[id].logins.append(Login(time, filename, ip))
+				player = get_player_by_name(name, extracted)
+				if not player:
+					player = Player(name, id)
+					extracted.append(player)
+				player.uuid = id
 	except (StopIteration, IndexError):
 		pass
 	except ValueError:
@@ -76,8 +96,8 @@ def progress_bar(current, total, size):
 	else:
 		print(f"\r|{'█' * done + ' ' * (size - done)}| ({current * 100 / total:.2f} %) ", end='')
 
-def extract_data(path: str) -> dict[UUID, Player]:
-	data = {}
+def extract_data(path: str) -> list[Player]:
+	data = []
 	files = os.listdir(path)
 	if os.path.exists(path + "latest.log"):
 		files.append("latest.log")
@@ -115,7 +135,7 @@ def main() -> None:
 		raise NotADirectoryError(f"{path} is not a directory")
 	
 	data = extract_data(path)
-	for player in data.values():
+	for player in data:
 		print(player)
 
 if __name__ == "__main__":
