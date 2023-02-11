@@ -70,9 +70,7 @@ def extract_log_data(filename: str, data: str, extracted: list[Player]) -> None:
 				player.logins.append(Login(time, filename, ip))
 				continue
 
-			# TODO good uuid pattern
-			has_uuid = re.match(r"(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})\.", line)
-			print(line)
+			has_uuid = re.match(r".*[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$", line)
 			if "User Authenticator" in line and has_uuid:
 				line = line.split()
 				id = line[-1]
@@ -135,6 +133,7 @@ def main() -> None:
 		raise NotADirectoryError(f"{path} is not a directory")
 	
 	data = extract_data(path)
+	#index out of range dans la loop de print
 	for player in data:
 		print(player)
 
