@@ -6,6 +6,8 @@ from uuid import *
 from typing import Optional
 
 ZIP_TYPES = {".gz"}
+IP_PATTERN = r"\w+\[\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,5})"
+UUID_PATTERN = r".*[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
 
 class Login:
 	time: str
@@ -33,10 +35,14 @@ class Player:
 		self.logins = []
 
 	def __repr__(self) -> str:
-		repr = f"{self.uuid} {self.name + ' ' * (16 - len(self.name))} {self.logins[0]}\n"
-		tmp = len(str(self.uuid)) + len(self.name) + 16 - len(self.name) + 2
-		for login in self.logins[1:]:
-			repr += tmp * " " + str(login) + '\n'
+		repr = f"{self.uuid} {self.name + ' ' * (16 - len(self.name))} "
+		if len(self.logins) == 0:
+			repr += "NaN"
+		else:
+			repr += f"{self.logins[0]}\n"
+			tmp = len(str(self.uuid)) + len(self.name) + 16 - len(self.name) + 2
+			for login in self.logins[1:]:
+				repr += tmp * " " + str(login) + '\n'
 		return repr
 
 def get_type(file: str) -> str:
@@ -58,7 +64,7 @@ def extract_log_data(filename: str, data: str, extracted: list[Player]) -> None:
 		for i in range(len(data)):
 			line = data[i]
 			time = line[1:9]
-			has_ip = re.search(r"\w+\[\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,5})", line)
+			has_ip = re.search(IP_PATTERN, line)
 			if has_ip:
 				line = has_ip.group(0)
 				name = line[:line.index('[')]
@@ -70,7 +76,7 @@ def extract_log_data(filename: str, data: str, extracted: list[Player]) -> None:
 				player.logins.append(Login(time, filename, ip))
 				continue
 
-			has_uuid = re.match(r".*[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$", line)
+			has_uuid = re.match(UUID_PATTERN, line)
 			if "User Authenticator" in line and has_uuid:
 				line = line.split()
 				id = line[-1]
@@ -133,7 +139,6 @@ def main() -> None:
 		raise NotADirectoryError(f"{path} is not a directory")
 	
 	data = extract_data(path)
-	#index out of range dans la loop de print
 	for player in data:
 		print(player)
 
