@@ -126,7 +126,7 @@ def extract_data(path: str) -> list[Player]:
 	return data
 
 def main() -> None:
-	print("Logs data browser by Victor Egret for Minecraft 1.19.3")
+	print("Logs data browser by solvictor for Minecraft 1.19.3")
 	if len(sys.argv) == 1:
 		path = input("Enter the logs folder path: ")
 	else:
